@@ -63,7 +63,7 @@ class Shape:
 class Connect:
     """Contains a single connect object"""
 
-    def __init__(self, xml_connect):
+    def __init__(self):
         pass
 
     @classmethod
@@ -174,6 +174,10 @@ class Document:
             os.makedirs(tmp_folder + '/visio/_rels')
             os.makedirs(tmp_folder + '/visio/pages')
             os.makedirs(tmp_folder + '/visio/pages/_rels')
+            os.makedirs(tmp_folder + '/visio/masters')
+            os.makedirs(tmp_folder + '/visio/masters/_rels')
+            os.makedirs(tmp_folder + '/visio/theme')
+
         else:
             raise IOError('Error writing to file {}. '
                           'tmp folder {} already exists'
