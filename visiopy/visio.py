@@ -34,8 +34,8 @@ class Shape:
     def __init__(self):
         pass
 
-    @classmethod
-    def from_xml(cls, xml_shape):
+    @staticmethod
+    def from_xml(xml_shape):
         """Initialise the shape into python object
 
         :param xml_shape: the shape from xml.etree.ElementTree
@@ -45,6 +45,8 @@ class Shape:
         #       we should probably check for certain fields etc
 
         # Parse the main shape attributes
+
+        cls = Shape()
         for key, value in xml_shape.items():
             setattr(cls, from_camel(key), value)
 
@@ -68,12 +70,13 @@ class Connect:
     def __init__(self):
         pass
 
-    @classmethod
-    def from_xml(cls, xml_connect):
+    @staticmethod
+    def from_xml(xml_connect):
         """Initialise the connect into python object
 
         :param xml_connect: the connect from xml.etree.ElementTree
         """
+        cls = Connect()
         # Parse the main shape attributes
         for key, value in xml_connect.items():
             # TODO decide if we want to convert the value from_camel
