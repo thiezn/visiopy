@@ -5,6 +5,8 @@ import xml.etree.ElementTree as ET
 import re
 import shutil
 import os
+from tmphacks import (VisioRelationships, DocumentRelationships,
+                       WindowsProperties, DocumentProperties)
 
 ns = {'visio': 'http://schemas.microsoft.com/office/visio/2012/main'}
 
@@ -154,6 +156,14 @@ class Document:
         self.subject = ''
         self.description = ''
 
+        # Relationships
+        self.visio_rels = VisioRelationships()
+        self.document_rels = DocumentRelationships()
+
+        # Document properties
+        self.windows_properties = WindowsProperties()
+        self.document_properties = DocumentProperties()
+
         # custom.xml data
         self.is_metric = True  # Using the metric system
 
@@ -194,6 +204,19 @@ class Document:
         #     Do i have to set the RecalcDocument in custom.xml to True?
 
         # Zip the tmp_folder contents and rename file to vsdx
+
+        with open(tmp_folder + '/visio/_rels/document.xml.rels', 'w') as f:
+            f.write(self.visio_rels.get_xml())
+
+        with open(tmp_folder + '/_rels/.rels', 'w') as f:
+            f.write(self.document_rels.get_xml())
+
+        with open(tmp_folder + '/visio/windows.xml', 'w') as f:
+            f.write(self.windows_properties.get_xml())
+
+        with open(tmp_folder + '/visio/document.xml', 'w') as f:
+            f.write(self.document_properties.get_xml())
+
         shutil.make_archive(filename, 'zip', tmp_folder)
         shutil.move(filename + '.zip', filename + '.vsdx')
 
