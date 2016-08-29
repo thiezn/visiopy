@@ -6,7 +6,7 @@ import re
 import shutil
 import os
 from tmphacks import (VisioRelationships, DocumentRelationships,
-                       WindowsProperties, DocumentProperties)
+                      WindowsProperties, DocumentProperties, ContentTypes)
 
 ns = {'visio': 'http://schemas.microsoft.com/office/visio/2012/main'}
 
@@ -164,6 +164,9 @@ class Document:
         self.windows_properties = WindowsProperties()
         self.document_properties = DocumentProperties()
 
+        # Content_Types
+        self.content_types = ContentTypes()
+
         # custom.xml data
         self.is_metric = True  # Using the metric system
 
@@ -203,20 +206,25 @@ class Document:
         #     Convert all data from snake to CamelCase again
         #     Do i have to set the RecalcDocument in custom.xml to True?
 
-        # Zip the tmp_folder contents and rename file to vsdx
+        # Create [content_Types].xml
+        with open(tmp_folder + '/[Content_Types].xml', 'w') as f:
+            f.write(self.content_types.get_xml())
 
+        # Create _rels files
         with open(tmp_folder + '/visio/_rels/document.xml.rels', 'w') as f:
             f.write(self.visio_rels.get_xml())
 
         with open(tmp_folder + '/_rels/.rels', 'w') as f:
             f.write(self.document_rels.get_xml())
 
+        # Create visio document and window properties
         with open(tmp_folder + '/visio/windows.xml', 'w') as f:
             f.write(self.windows_properties.get_xml())
 
         with open(tmp_folder + '/visio/document.xml', 'w') as f:
             f.write(self.document_properties.get_xml())
 
+        # Zip the tmp_folder contents and rename file to vsdx
         shutil.make_archive(filename, 'zip', tmp_folder)
         shutil.move(filename + '.zip', filename + '.vsdx')
 
@@ -226,17 +234,27 @@ class Document:
     @classmethod
     def from_file(cls, filename):
         # unzip vsdx file to temp. folder
-        full_directory = './{}'.format(filename.rsplit('.', 1)[0])
+        directory = './{}'.format(filename.rsplit('.', 1)[0])
         with zipfile.ZipFile(filename, "r") as zip_ref:
-            zip_ref.extractall(full_directory)
+            zip_ref.extractall(directory)
 
-        # Parse data
-        pages = []
-        pages.append(Page(full_directory + '/visio/pages/page1.xml'))
+        # Read pages
+        pages_rels = get_pages_rels('{}/visio/pages/_rels/pages.xml.rels'
+                                    .format(directory))
+
+        pages = [Page('{}/visio/pages/{}'.format(directory, page['Target']))
+                 for page in pages_rels]
 
         # Remove extracted folder again
-        shutil.rmtree(full_directory)
+        shutil.rmtree(directory)
         return cls(pages=pages)
+
+
+def get_pages_rels(xml_file):
+    """Returns all page relations from pages.xml.rels"""
+    tree = ET.parse(xml_file)
+    root = tree.getroot()
+    return [page.attrib for page in root]
 
 
 def main():
@@ -244,14 +262,9 @@ def main():
     print('Loading diagram {}'.format(filename))
     diag = Document.from_file(filename)
 
-    for page in diag.pages:
-        print(page)
-        for shape in page.shapes:
-            print(shape.__dict__)
-        for connect in page.connects:
-            print(vars(connect))
-
+    print('Writing to file')
     diag.to_file('mytmpfile')
+
 
 if __name__ == '__main__':
     main()

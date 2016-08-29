@@ -7,6 +7,31 @@ import shutil
 import os
 
 
+class ContentTypes:
+    """Holds the content types info [Content_Types].xml"""
+
+    def __init__(self):
+        # TODO clean this up
+        self.text = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                       <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                           <Default Extension="emf" ContentType="image/x-emf"/>
+                           <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                           <Default Extension="xml" ContentType="application/xml"/>
+                           <Override PartName="/visio/document.xml" ContentType="application/vnd.ms-visio.drawing.main+xml"/>
+                           <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+                           <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+                           <Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>
+                           <Override PartName="/visio/masters/masters.xml" ContentType="application/vnd.ms-visio.masters+xml"/>
+                           <Override PartName="/visio/masters/master1.xml" ContentType="application/vnd.ms-visio.master+xml"/>
+                           <Override PartName="/visio/pages/pages.xml" ContentType="application/vnd.ms-visio.pages+xml"/>
+                           <Override PartName="/visio/pages/page1.xml" ContentType="application/vnd.ms-visio.page+xml"/>
+                           <Override PartName="/visio/windows.xml" ContentType="application/vnd.ms-visio.windows+xml"/>
+                       </Types>"""
+
+    def get_xml(self):
+        return self.text
+
+
 class DocumentRelationships:
     """Holds the relationships for /_rels"""
 
