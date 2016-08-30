@@ -144,7 +144,7 @@ class Document:
     |- [Content_Types].xml
     """
 
-    def __init__(self, pages=None):
+    def __init__(self, pages=None, pages_rels=None):
         self.pages = pages
 
         # apps.xml data
@@ -160,6 +160,7 @@ class Document:
         self.description = ''
 
         # Relationships
+        self.pages_rels = pages_rels
         self.visio_rels = VisioRelationships()
         self.document_rels = DocumentRelationships()
 
@@ -211,21 +212,26 @@ class Document:
 
         # Create [content_Types].xml
         with open(tmp_folder + '/[Content_Types].xml', 'w') as f:
-            f.write(self.content_types.get_xml())
+            f.write(self.content_types.to_xml())
 
         # Create _rels files
         with open(tmp_folder + '/visio/_rels/document.xml.rels', 'w') as f:
-            f.write(self.visio_rels.get_xml())
+            f.write(self.visio_rels.to_xml())
 
         with open(tmp_folder + '/_rels/.rels', 'w') as f:
-            f.write(self.document_rels.get_xml())
+            f.write(self.document_rels.to_xml())
+
+        # TODO Convert self.pages_rels to class thats able to spit out xml
+        self.pages_rels.to_xml('{}/visio/pages/_rels/pages.xml.rels'.format(tmp_folder))
+        #with open(tmp_folder + '/visio/pages/_rels/pages.xml.rels', 'w') as f:
+        #    f.write(self.pages_rels)
 
         # Create visio document and window properties
         with open(tmp_folder + '/visio/windows.xml', 'w') as f:
-            f.write(self.windows_properties.get_xml())
+            f.write(self.windows_properties.to_xml())
 
         with open(tmp_folder + '/visio/document.xml', 'w') as f:
-            f.write(self.document_properties.get_xml())
+            f.write(self.document_properties.to_xml())
 
         # Zip the tmp_folder contents and rename file to vsdx
         shutil.make_archive(filename, 'zip', tmp_folder)
@@ -242,22 +248,74 @@ class Document:
             zip_ref.extractall(directory)
 
         # Read pages
-        pages_rels = get_pages_rels('{}/visio/pages/_rels/pages.xml.rels'
-                                    .format(directory))
 
-        pages = [Page('{}/visio/pages/{}'.format(directory, page['Target']))
-                 for page in pages_rels]
+        #pages_rels = get_pages_rels('{}/visio/pages/_rels/pages.xml.rels'
+         #                           .format(directory))
+
+        pages_rels = PagesRels.from_xml('{}/visio/pages/_rels/pages.xml.rels'
+                                        .format(directory))
+
+        pages = [Page('{}/visio/pages/{}'.format(directory, target))
+                 for _, target in pages_rels.rels.items()]
 
         # Remove extracted folder again
         shutil.rmtree(directory)
-        return cls(pages=pages)
+        return cls(pages=pages, pages_rels=pages_rels)
 
 
 def get_pages_rels(xml_file):
-    """Returns all page relations from pages.xml.rels"""
+    """Returns all page relations from pages.xml.rels
+
+    :param xml_file: The file location for pages.xml.rels
+    """
     tree = ET.parse(xml_file)
     root = tree.getroot()
     return [page.attrib for page in root]
+
+
+class PagesRels:
+
+    type = 'http://schemas.microsoft.com/visio/2010/relationships/page'
+
+    def __init__(self):
+        self.rels = {}
+
+    def add(self, rel_id, target):
+        if rel_id not in self.rels:
+            self.rels[rel_id] = target
+        else:
+            raise ValueError('rel_id {} already exists'.format(rel_id))
+
+    def rm(self, rel_id):
+        """Remove relationship from pages relationships"""
+        del self.rels[rel_id]
+
+    def to_xml(self, xml_file):
+        """Generate full XML document from current relationships"""
+        # TODO: the xml declaration is missing standalone=yes. does ET support?
+
+        root = ET.Element('relationships', {'xmlns': "http://schemas.openxmlformats.org/package/2006/relationships"})
+
+        for Id, Target in self.rels.items():
+            ET.SubElement(root,
+                          'relationship',
+                          {'Id': Id, 'Target': Target, 'Type': self.type})
+
+        tree = ET.ElementTree(root)
+        tree.write(xml_file,
+                   encoding='utf-8',
+                   xml_declaration=True)
+
+    @staticmethod
+    def from_xml(xml_file):
+        """Generate class from XML document"""
+        cls = PagesRels()
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+
+        for page in root:
+            cls.add(page.attrib['Id'], page.attrib['Target'])
+        return cls
 
 
 def main():

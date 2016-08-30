@@ -28,7 +28,7 @@ class ContentTypes:
                            <Override PartName="/visio/windows.xml" ContentType="application/vnd.ms-visio.windows+xml"/>
                        </Types>"""
 
-    def get_xml(self):
+    def to_xml(self):
         return self.text
 
 
@@ -46,7 +46,7 @@ class DocumentRelationships:
                      '    <Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>\n'
                      '</Relationships>')
 
-    def get_xml(self):
+    def to_xml(self):
         return self.text
 
 
@@ -64,7 +64,7 @@ class VisioRelationships:
                      '    <Relationship Target="masters/masters.xml" Type="http://schemas.microsoft.com/visio/2010/relationships/masters" Id="rId1"/>\n'
                      '</Relationships>')
 
-    def get_xml(self):
+    def to_xml(self):
         """Generates the raw xml output"""
         return self.text
 
@@ -91,7 +91,7 @@ class WindowsProperties:
                      "</Window>"
                      "</Windows>")
 
-    def get_xml(self):
+    def to_xml(self):
         return self.text
 
 
@@ -985,5 +985,5 @@ class DocumentProperties:
                         </DocumentSheet>
                     </VisioDocument>"""
 
-    def get_xml(self):
+    def to_xml(self):
         return self.text
