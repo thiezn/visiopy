@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import zipfile
 import xml.etree.ElementTree as ET
 import re

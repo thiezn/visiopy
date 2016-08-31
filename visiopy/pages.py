@@ -34,17 +34,28 @@ class PageCollection:
 
         rel_dir = '{}/visio/pages/_rels/'.format(dir)
         page_dir = '{}/visio/pages/'.format(dir)
+        pages = []
 
         rels = Relationship.from_xml(rel_dir + 'pages.xml.rels')
-        pages = [Page(page_dir + page_filename)
-                 for _, (page_filename, _) in rels.rels.items()]
+
+        # Parse pages.xml for page info
+        tree = ET.parse(page_dir + 'pages.xml')
+        root = tree.getroot()
+
+        for child in root:
+            name = child.attrib.get('Name', '')
+            id = child.attrib['ID']
+            # TODO Parse these namespaces properly
+            rel_id = child[1].attrib['{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id']
+            pages.append(Page.from_xml(page_dir + rels.rels[rel_id][0],
+                                       name, id, rel_id))
 
         return cls(rels, pages)
 
     def to_xml(self):
         """Generate XML data for pages
 
-        :return: strings containing (pages.xml, pages.xml.rels)
+        :return: XML string for (pages.xml, pages.xml.rels, [page1.xml, page2.xml, ...])
         """
         root = ET.Element('Pages', {'xmlns': 'http://schemas.microsoft.com/office/visio/2012/main',
                                     'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
@@ -71,8 +82,9 @@ class PageCollection:
 
         pages_xml = ET.tostring(root, encoding='unicode')
         pages_xml_rels = self.rels.to_xml()
+        page_xml_list = [page.to_xml() for page in self.pages]
 
-        return pages_xml, pages_xml_rels
+        return pages_xml, pages_xml_rels, page_xml_list
 
 
 class Page:
@@ -80,21 +92,20 @@ class Page:
 
     ns = {'visio': 'http://schemas.microsoft.com/office/visio/2012/main'}
 
-    def __init__(self, shapes=None, connects=None, rels=None):
+    def __init__(self, filename, name=None, id=None, rel_id=None, shapes=None, connects=None):
         """Initialises a page
 
         :param shapes: List of :class:`Shape` classes
         :param connects: List of :class:`Connect` classes
-        :param rels: Instance of :class:`Relationship` from page?.xml.rels
         """
-        self.name = 'HAVETOPARSETHISCANBEEMPTY'
-        self.id = 'HAVETOPARSETHISSHOULDBE0'
-        self.rel_id = 'HAVETOPARSESHOULDBErId0'
+        self.filename = filename
+        self.name = name
+        self.id = id
+        self.rel_id = rel_id
         self.shapes = shapes
         self.connects = connects
-        self.rels = rels
 
-    def to_xml(self, xml_file):
+    def to_xml(self):
         """Writes Page object to page?.xml file"""
         # TODO: the to_xml functions all around shouldn't write to file
         # but just spit out the xml as a string. Then I can have this
@@ -103,11 +114,30 @@ class Page:
         # function to create the full picture
         # pheww, this is going to be a lot of work until i figured
         # all the types out!
-        pass
+
+        root = ET.Element('PageContents', {'xmlns': 'http://schemas.microsoft.com/office/visio/2012/main',
+                                           'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
+                                           'xml:space': 'preserve'})
+        if self.shapes:
+            xml_shapes = ET.SubElement(root, 'Shapes')
+            for shape in self.shapes:
+                xml_shapes.append(ET.fromstring(shape.to_xml()))
+
+        if self.connects:
+            xml_connects = ET.SubElement(root, 'Connects')
+            for connect in self.connects:
+                xml_connects.append(ET.fromstring(connect.to_xml()))
+
+        return ET.tostring(root, encoding='unicode')
 
     @classmethod
-    def from_xml(cls, xml_file):
+    def from_xml(cls, xml_file, name, id, rel_id):
         """Create a Page object from an existing xml_file"""
+
+        if '/' in xml_file:
+            filename = xml_file.rsplit('/', 1)[1]
+        else:
+            filename = xml_file
 
         shapes = []
         connects = []
@@ -124,12 +154,7 @@ class Page:
             for item in items:
                 connects.append(Connect.from_xml(item))
 
-        # Parse _rels/page?.xml.rels file
-        dir, filename = xml_file.rsplit('/', 1)
-        rels = Relationship.from_xml('{}/_rels/{}.rels'
-                                     .format(dir, filename))
-
-        return cls(shapes=shapes, connects=connects, rels=rels)
+        return cls(filename, name, id, rel_id, shapes, connects)
 
 
 class Shape:
@@ -167,6 +192,10 @@ class Shape:
 
         return cls
 
+    def to_xml(self):
+        # TODO stop faking it baby!
+        return "<Shape ID='1' Type='Shape' LineStyle='3' FillStyle='3' TextStyle='3' />"
+
 
 class Connect:
     """Contains a single connect object"""
@@ -186,3 +215,6 @@ class Connect:
             setattr(cls, key, value)
 
         return cls
+
+    def to_xml(self):
+        pass

@@ -6,8 +6,8 @@ import shutil
 import os
 from relationships import Relationship
 from pages import Page, PageCollection
-from tmphacks import (VisioRelationships, WindowsProperties,
-                      DocumentProperties, ContentTypes)
+from hacks import (VisioRelationships, WindowsProperties,
+                   DocumentProperties, ContentTypes)
 
 
 class Document:
@@ -49,8 +49,7 @@ class Document:
     def __init__(self,
                  page_collection=None,
                  package_rels=None,
-                 document_rels=None,
-                 masters_rels=None):
+                 document_rels=None):
 
         self.page_collection = page_collection
 
@@ -69,7 +68,6 @@ class Document:
         # Relationships
         self.package_rels = package_rels
         self.document_rels = document_rels
-        self.masters_rels = masters_rels
 
         # Document properties
         self.windows_properties = WindowsProperties()
@@ -81,7 +79,7 @@ class Document:
         # custom.xml data
         self.is_metric = True  # Using the metric system
 
-    def to_file(self, filename, tmp_folder='./tmp_folder'):
+    def to_file(self, filename, tmp_folder='./tmp'):
         """Writes visio diagram to file
 
         :param filename: The filename to write to
@@ -98,8 +96,13 @@ class Document:
             os.makedirs(tmp_folder + '/visio/_rels')
             os.makedirs(tmp_folder + '/visio/pages')
             os.makedirs(tmp_folder + '/visio/pages/_rels')
+            # TODO the masters folder seems to be generated when you
+            # create a connection. Lets tackle this when i've got
+            # the basics worked out.
             os.makedirs(tmp_folder + '/visio/masters')
             os.makedirs(tmp_folder + '/visio/masters/_rels')
+            # TODO the theme folder lets you put themes on your diagram?
+            # not present when theres no theme customisation
             os.makedirs(tmp_folder + '/visio/theme')
 
         else:
@@ -126,7 +129,7 @@ class Document:
 
         # Write pages.xml and pages.xml.rels
         # TODO: need to extract all the page?.xml and related page?.xml.rels
-        pages_xml, pages_xml_rels = self.page_collection.to_xml()
+        pages_xml, pages_xml_rels, page_xml_list = self.page_collection.to_xml()
 
         with open('{}/visio/pages/_rels/pages.xml.rels'.format(tmp_folder), 'w') as f:
             f.write(xml_decl_standalone)
@@ -135,6 +138,11 @@ class Document:
         with open('{}/visio/pages/pages.xml'.format(tmp_folder), 'w') as f:
             f.write(xml_decl)
             f.write(pages_xml)
+
+        for page_xml in page_xml_list:
+            with open('{}/visio/pages/needtofigureoutfilename.page?.xml'.format(tmp_folder), 'w') as f:
+                f.write(xml_decl)
+                f.write(page_xml)
 
         # Create _rels files
         xml_declaration = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -146,10 +154,6 @@ class Document:
         with open('{}/visio/_rels/document.xml.rels'.format(tmp_folder), 'w') as f:
             f.write(xml_decl_standalone)
             f.write(self.document_rels.to_xml())
-
-        with open('{}/visio/masters/_rels/masters.xml.rels'.format(tmp_folder), 'w') as f:
-            f.write(xml_decl_standalone)
-            f.write(self.masters_rels.to_xml())
 
         # Create visio document and window properties
         with open(tmp_folder + '/visio/windows.xml', 'w') as f:
@@ -163,7 +167,8 @@ class Document:
         shutil.move(filename + '.zip', filename + '.vsdx')
 
         # Remove the temporary folder
-        shutil.rmtree(tmp_folder)
+        print('normally we remove the tmp folder but leave it for debuggin now')
+        # shutil.rmtree(tmp_folder)
 
     @classmethod
     def from_file(cls, filename):
@@ -175,7 +180,6 @@ class Document:
         # Read relationships
         package_rels = Relationship.from_xml('{}/_rels/.rels'.format(directory))
         document_rels = Relationship.from_xml('{}/visio/_rels/document.xml.rels'.format(directory))
-        masters_rels = Relationship.from_xml('{}/visio/masters/_rels/masters.xml.rels'.format(directory))
 
         # Read pages and relationships
         page_collection = PageCollection.from_xml(directory)
@@ -184,12 +188,11 @@ class Document:
         shutil.rmtree(directory)
         return cls(page_collection=page_collection,
                    package_rels=package_rels,
-                   document_rels=document_rels,
-                   masters_rels=masters_rels)
+                   document_rels=document_rels)
 
 
 def main():
-    filename = 'SimpleDrawing.vsdx'
+    filename = 'SimpleDrawingMultiplePages.vsdx'
     print('Loading diagram {}'.format(filename))
     diag = Document.from_file(filename)
 
