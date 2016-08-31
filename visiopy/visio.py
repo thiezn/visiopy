@@ -1,111 +1,13 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import zipfile
-import xml.etree.ElementTree as ET
-import re
 import shutil
 import os
-from tmphacks import (VisioRelationships, DocumentRelationships,
-                      WindowsProperties, DocumentProperties, ContentTypes)
-
-ns = {'visio': 'http://schemas.microsoft.com/office/visio/2012/main'}
-
-
-def from_camel(name):
-    """Converts CamelCase to snake_case format
-
-    :param name: A CamelCase string to convert
-    """
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-
-
-def to_camel(name):
-    """Converts snake_case to CamelCase
-
-    :param name: A snake_case string to convert
-    """
-    return name.title().replace("_", "")
-
-
-class Shape:
-    """Contains a single shape object"""
-
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def from_xml(xml_shape):
-        """Initialise the shape into python object
-
-        :param xml_shape: the shape from xml.etree.ElementTree
-        """
-
-        # TODO: Ugly parsing at the moment
-        #       we should probably check for certain fields etc
-
-        # Parse the main shape attributes
-
-        cls = Shape()
-        for key, value in xml_shape.items():
-            setattr(cls, from_camel(key), value)
-
-        # Parse all shape data
-        for item in xml_shape:
-            if 'Cell' in item.tag:
-                setattr(cls,
-                        from_camel(item.attrib['N']),
-                        item.attrib['V'])
-            elif 'Section' in item.tag:
-                pass
-            elif 'Shapes' in item.tag:
-                pass
-
-        return cls
-
-
-class Connect:
-    """Contains a single connect object"""
-
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def from_xml(xml_connect):
-        """Initialise the connect into python object
-
-        :param xml_connect: the connect from xml.etree.ElementTree
-        """
-        cls = Connect()
-        # Parse the main shape attributes
-        for key, value in xml_connect.items():
-            # TODO decide if we want to convert the value from_camel
-            setattr(cls, from_camel(key), value)
-
-        return cls
-
-
-class Page:
-    """Holds a single Visio page"""
-
-    def __init__(self, xml_page):
-        """Initialises a page from xml data
-
-        :param xml_page: the page from xml.etree.ElementTree
-        """
-        tree = ET.parse(xml_page)
-        root = tree.getroot()
-
-        self.shapes = []
-        self.connects = []
-
-        for shapes in root.findall('visio:Shapes', ns):
-            for shape in shapes:
-                self.shapes.append(Shape.from_xml(shape))
-
-        for connects in root.findall('visio:Connects', ns):
-            for connect in connects:
-                self.connects.append(Connect.from_xml(connect))
+from relationships import Relationship
+from pages import Page, PageCollection
+from tmphacks import (VisioRelationships, WindowsProperties,
+                      DocumentProperties, ContentTypes)
 
 
 class Document:
@@ -144,8 +46,13 @@ class Document:
     |- [Content_Types].xml
     """
 
-    def __init__(self, pages=None, pages_rels=None):
-        self.pages = pages
+    def __init__(self,
+                 page_collection=None,
+                 package_rels=None,
+                 document_rels=None,
+                 masters_rels=None):
+
+        self.page_collection = page_collection
 
         # apps.xml data
         self.company = ''
@@ -160,9 +67,9 @@ class Document:
         self.description = ''
 
         # Relationships
-        self.pages_rels = pages_rels
-        self.visio_rels = VisioRelationships()
-        self.document_rels = DocumentRelationships()
+        self.package_rels = package_rels
+        self.document_rels = document_rels
+        self.masters_rels = masters_rels
 
         # Document properties
         self.windows_properties = WindowsProperties()
@@ -204,27 +111,45 @@ class Document:
         # TODO:
         #     write pages.xml/page1.xml/.. files
         #     write docOps files app.xml, core.xml, custom.xml, thumbnail.emf
-        #     write _rels files
+        #     DONE: write _rels files
         #     write visio document.xml and window.xml files
         #     write [Content-Types].xml file
         #     Convert all data from snake to CamelCase again
         #     Do i have to set the RecalcDocument in custom.xml to True?
 
+        xml_decl = '<?xml version="1.0" encoding="utf-8" ?>'
+        xml_decl_standalone = '<?xml version="1.0" encoding="utf-8" standalone="yes" ?>'
+
         # Create [content_Types].xml
         with open(tmp_folder + '/[Content_Types].xml', 'w') as f:
             f.write(self.content_types.to_xml())
 
-        # Create _rels files
-        with open(tmp_folder + '/visio/_rels/document.xml.rels', 'w') as f:
-            f.write(self.visio_rels.to_xml())
+        # Write pages.xml and pages.xml.rels
+        # TODO: need to extract all the page?.xml and related page?.xml.rels
+        pages_xml, pages_xml_rels = self.page_collection.to_xml()
 
-        with open(tmp_folder + '/_rels/.rels', 'w') as f:
+        with open('{}/visio/pages/_rels/pages.xml.rels'.format(tmp_folder), 'w') as f:
+            f.write(xml_decl_standalone)
+            f.write(pages_xml_rels)
+
+        with open('{}/visio/pages/pages.xml'.format(tmp_folder), 'w') as f:
+            f.write(xml_decl)
+            f.write(pages_xml)
+
+        # Create _rels files
+        xml_declaration = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+
+        with open('{}/_rels/.rels'.format(tmp_folder), 'w') as f:
+            f.write(xml_decl_standalone)
+            f.write(self.package_rels.to_xml())
+
+        with open('{}/visio/_rels/document.xml.rels'.format(tmp_folder), 'w') as f:
+            f.write(xml_decl_standalone)
             f.write(self.document_rels.to_xml())
 
-        # TODO Convert self.pages_rels to class thats able to spit out xml
-        self.pages_rels.to_xml('{}/visio/pages/_rels/pages.xml.rels'.format(tmp_folder))
-        #with open(tmp_folder + '/visio/pages/_rels/pages.xml.rels', 'w') as f:
-        #    f.write(self.pages_rels)
+        with open('{}/visio/masters/_rels/masters.xml.rels'.format(tmp_folder), 'w') as f:
+            f.write(xml_decl_standalone)
+            f.write(self.masters_rels.to_xml())
 
         # Create visio document and window properties
         with open(tmp_folder + '/visio/windows.xml', 'w') as f:
@@ -247,75 +172,20 @@ class Document:
         with zipfile.ZipFile(filename, "r") as zip_ref:
             zip_ref.extractall(directory)
 
-        # Read pages
+        # Read relationships
+        package_rels = Relationship.from_xml('{}/_rels/.rels'.format(directory))
+        document_rels = Relationship.from_xml('{}/visio/_rels/document.xml.rels'.format(directory))
+        masters_rels = Relationship.from_xml('{}/visio/masters/_rels/masters.xml.rels'.format(directory))
 
-        #pages_rels = get_pages_rels('{}/visio/pages/_rels/pages.xml.rels'
-         #                           .format(directory))
-
-        pages_rels = PagesRels.from_xml('{}/visio/pages/_rels/pages.xml.rels'
-                                        .format(directory))
-
-        pages = [Page('{}/visio/pages/{}'.format(directory, target))
-                 for _, target in pages_rels.rels.items()]
+        # Read pages and relationships
+        page_collection = PageCollection.from_xml(directory)
 
         # Remove extracted folder again
         shutil.rmtree(directory)
-        return cls(pages=pages, pages_rels=pages_rels)
-
-
-def get_pages_rels(xml_file):
-    """Returns all page relations from pages.xml.rels
-
-    :param xml_file: The file location for pages.xml.rels
-    """
-    tree = ET.parse(xml_file)
-    root = tree.getroot()
-    return [page.attrib for page in root]
-
-
-class PagesRels:
-
-    type = 'http://schemas.microsoft.com/visio/2010/relationships/page'
-
-    def __init__(self):
-        self.rels = {}
-
-    def add(self, rel_id, target):
-        if rel_id not in self.rels:
-            self.rels[rel_id] = target
-        else:
-            raise ValueError('rel_id {} already exists'.format(rel_id))
-
-    def rm(self, rel_id):
-        """Remove relationship from pages relationships"""
-        del self.rels[rel_id]
-
-    def to_xml(self, xml_file):
-        """Generate full XML document from current relationships"""
-        # TODO: the xml declaration is missing standalone=yes. does ET support?
-
-        root = ET.Element('relationships', {'xmlns': "http://schemas.openxmlformats.org/package/2006/relationships"})
-
-        for Id, Target in self.rels.items():
-            ET.SubElement(root,
-                          'relationship',
-                          {'Id': Id, 'Target': Target, 'Type': self.type})
-
-        tree = ET.ElementTree(root)
-        tree.write(xml_file,
-                   encoding='utf-8',
-                   xml_declaration=True)
-
-    @staticmethod
-    def from_xml(xml_file):
-        """Generate class from XML document"""
-        cls = PagesRels()
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-
-        for page in root:
-            cls.add(page.attrib['Id'], page.attrib['Target'])
-        return cls
+        return cls(page_collection=page_collection,
+                   package_rels=package_rels,
+                   document_rels=document_rels,
+                   masters_rels=masters_rels)
 
 
 def main():
