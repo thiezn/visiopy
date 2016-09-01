@@ -16,20 +16,53 @@ class PageCollection:
     """Holds a collection of :class:`Page` classes including their properties
     and relationships"""
 
-    def __init__(self, rels=None, pages=None):
+    def __init__(self, content_types, rels=None, pages=None):
         """Initialise pages
 
+        :param content_types: Instance of :class:`ContentType`
         :param rels: Instance of :class:`Relationship` from pages.xml.rels
         :param pages: List of :class:`Page` classes
         """
-        self.rels = rels  # holds relationships to pages
-        self.pages = pages  # holds instances of :class:`Page` class
+        self.content_types = content_types
+        self.rels = rels
+        self.pages = pages
+
+    def add_page(self, name):
+        """Add a page to the collection"""
+
+        filename = 0
+        rel_id = 0
+        id = 0
+
+        for page in self.pages:
+            if int(page.rel_id.lstrip('rId')) >= rel_id:
+                rel_id = int(page.rel_id.strip('rId'))
+            if int(page.filename.lstrip('page').strip('.xml')) >= filename:
+                filename = int(page.filename.lstrip('page').strip('.xml'))
+            if int(page.id) >= id:
+                id = int(page.id)
+
+        filename += 1
+        rel_id += 1
+        id += 1
+
+        filename = 'page{}.xml'.format(filename)
+        rel_id = 'rId{}'.format(rel_id)
+        id = str(id)
+
+        self.rels.add(rel_id, filename, 'http://schemas.microsoft.com/visio/2010/relationships/page')
+        self.content_types.add('/visio/pages/{}'.format(filename), 'application/vnd.ms-visio.page+xml')
+        self.pages.append(Page(filename,
+                               name,
+                               id,
+                               rel_id))
 
     @classmethod
-    def from_xml(cls, dir):
+    def from_xml(cls, dir, content_types):
         """Generate PageCollection from files
 
         :param dir: The directory of the extracted visio package
+        :param content_types: Instance of :class:`ContentType`
         """
 
         rel_dir = '{}/visio/pages/_rels/'.format(dir)
@@ -50,12 +83,12 @@ class PageCollection:
             pages.append(Page.from_xml(page_dir + rels.rels[rel_id][0],
                                        name, id, rel_id))
 
-        return cls(rels, pages)
+        return cls(content_types, rels, pages)
 
     def to_xml(self):
         """Generate XML data for pages
 
-        :return: XML string for (pages.xml, pages.xml.rels, [page1.xml, page2.xml, ...])
+        :return: XML string for (pages.xml, pages.xml.rels)
         """
         root = ET.Element('Pages', {'xmlns': 'http://schemas.microsoft.com/office/visio/2012/main',
                                     'xmlns:r': 'http://schemas.openxmlformats.org/officeDocument/2006/relationships',
@@ -72,19 +105,37 @@ class PageCollection:
                                       'ViewScale': '0.82',
                                       'ViewCenterX': '4.1275082550165',
                                       'ViewCenterY': '8.5852171704343'})
+
             xml_pagesheet = ET.SubElement(xml_page,
                                           'PageSheet',
                                           {'LineStyle': '0',
                                            'FillStyle': '0',
                                            'TextStyle': '0'})
-            # TODO Add all data within pagesheet
+
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'PageWidth', 'V': '8.26771653543307'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'PageHeight', 'V': '11.69291338582677'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'ShdwOffsetX', 'V': '0.1181102362204724'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'ShdwOffsetY', 'V': '-0.1181102362204724'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'PageScale', 'V': '0.03937007874015748', 'U': 'MM'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'DrawingScale', 'V': '0.03937007874015748', 'U': 'MM'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'DrawingSizeType', 'V': '0'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'DrawingScaleType', 'V': '0'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'InhibitSnap', 'V': '0'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'PageLockReplace', 'V': '0', 'U': 'BOOL'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'PageLockDuplicate', 'V': '0', 'U': 'BOOL'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'UIVisibility', 'V': '0'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'ShdwType', 'V': '0'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'ShdwObliqueAngle', 'V': '0'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'ShdwScaleFactor', 'V': '1'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'DrawingResizeType', 'V': '1'})
+            ET.SubElement(xml_pagesheet, 'Cell', {'N': 'PageShapeSplit', 'V': '1'})
+
             ET.SubElement(xml_page, 'Rel', {'r:id': page.rel_id})
 
         pages_xml = ET.tostring(root, encoding='unicode')
         pages_xml_rels = self.rels.to_xml()
-        page_xml_list = [page.to_xml() for page in self.pages]
 
-        return pages_xml, pages_xml_rels, page_xml_list
+        return pages_xml, pages_xml_rels
 
 
 class Page:

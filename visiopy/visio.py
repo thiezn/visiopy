@@ -5,9 +5,10 @@ import zipfile
 import shutil
 import os
 from relationships import Relationship
+from content_types import ContentTypes
 from pages import Page, PageCollection
 from hacks import (VisioRelationships, WindowsProperties,
-                   DocumentProperties, ContentTypes)
+                   DocumentProperties)
 
 
 class Document:
@@ -49,7 +50,8 @@ class Document:
     def __init__(self,
                  page_collection=None,
                  package_rels=None,
-                 document_rels=None):
+                 document_rels=None,
+                 content_types=None):
 
         self.page_collection = page_collection
 
@@ -74,7 +76,7 @@ class Document:
         self.document_properties = DocumentProperties()
 
         # Content_Types
-        self.content_types = ContentTypes()
+        self.content_types = content_types
 
         # custom.xml data
         self.is_metric = True  # Using the metric system
@@ -125,11 +127,11 @@ class Document:
 
         # Create [content_Types].xml
         with open(tmp_folder + '/[Content_Types].xml', 'w') as f:
+            f.write(xml_decl_standalone)
             f.write(self.content_types.to_xml())
 
         # Write pages.xml and pages.xml.rels
-        # TODO: need to extract all the page?.xml and related page?.xml.rels
-        pages_xml, pages_xml_rels, page_xml_list = self.page_collection.to_xml()
+        pages_xml, pages_xml_rels = self.page_collection.to_xml()
 
         with open('{}/visio/pages/_rels/pages.xml.rels'.format(tmp_folder), 'w') as f:
             f.write(xml_decl_standalone)
@@ -139,10 +141,12 @@ class Document:
             f.write(xml_decl)
             f.write(pages_xml)
 
-        for page_xml in page_xml_list:
-            with open('{}/visio/pages/needtofigureoutfilename.page?.xml'.format(tmp_folder), 'w') as f:
+        # Write page?.xml and page?.xml.rels
+        # TODO, page?.xml.rels not generated yet
+        for page in self.page_collection.pages:
+            with open('{}/visio/pages/{}'.format(tmp_folder, page.filename), 'w') as f:
                 f.write(xml_decl)
-                f.write(page_xml)
+                f.write(page.to_xml())
 
         # Create _rels files
         xml_declaration = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -177,27 +181,39 @@ class Document:
         with zipfile.ZipFile(filename, "r") as zip_ref:
             zip_ref.extractall(directory)
 
+        # Read [Content_Types].xml
+        content_types = ContentTypes.from_xml(directory + '/[Content_Types].xml')
+
         # Read relationships
         package_rels = Relationship.from_xml('{}/_rels/.rels'.format(directory))
         document_rels = Relationship.from_xml('{}/visio/_rels/document.xml.rels'.format(directory))
 
         # Read pages and relationships
-        page_collection = PageCollection.from_xml(directory)
+        page_collection = PageCollection.from_xml(directory, content_types)
 
         # Remove extracted folder again
         shutil.rmtree(directory)
         return cls(page_collection=page_collection,
                    package_rels=package_rels,
-                   document_rels=document_rels)
+                   document_rels=document_rels,
+                   content_types=content_types)
+
+    def add_page(self, name):
+        """Add a page to the document"""
+        self.page_collection.add_page(name)
 
 
 def main():
     filename = 'SimpleDrawingMultiplePages.vsdx'
+    new_filename = 'mytmpfile'
     print('Loading diagram {}'.format(filename))
     diag = Document.from_file(filename)
 
-    print('Writing to file')
-    diag.to_file('mytmpfile')
+    print('Adding empty page')
+    diag.add_page('MyNewPage')
+
+    print('Writing to file {}'.format(new_filename))
+    diag.to_file(new_filename)
 
 
 if __name__ == '__main__':

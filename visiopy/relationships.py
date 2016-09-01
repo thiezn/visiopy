@@ -57,7 +57,10 @@ class Relationship:
 
     @staticmethod
     def from_xml(xml_file):
-        """Generate class from XML document"""
+        """Generate class from XML document
+
+        :param xml_file: The xml file to parse
+        """
         cls = Relationship()
         tree = ET.parse(xml_file)
         root = tree.getroot()
