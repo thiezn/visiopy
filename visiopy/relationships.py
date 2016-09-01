@@ -42,10 +42,10 @@ class Relationship:
     def to_xml(self):
         """Generate XML from current relationships"""
 
-        root = ET.Element('relationships', {'xmlns': self.doc_schema})
+        root = ET.Element('Relationships', {'xmlns': self.doc_schema})
 
         for Id, (Target, Type) in self.rels.items():
-            ET.SubElement(root, 'relationship', {'Id': Id, 'Target': Target, 'Type': Type})
+            ET.SubElement(root, 'Relationship', {'Id': Id, 'Target': Target, 'Type': Type})
 
         """
         tree = ET.ElementTree(root)
