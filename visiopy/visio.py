@@ -8,6 +8,7 @@ from relationships import Relationship
 from content_types import ContentTypes
 from pages import PageCollection
 from hacks import (WindowsProperties, DocumentProperties)
+from docprops import DocProps
 
 
 class Document:
@@ -71,6 +72,7 @@ class Document:
         self.document_rels = document_rels
 
         # Document properties
+        self.doc_props = DocProps()
         self.windows_properties = WindowsProperties()
         self.document_properties = DocumentProperties()
 
@@ -128,6 +130,23 @@ class Document:
         with open(tmp_folder + '/[Content_Types].xml', 'w') as f:
             f.write(xml_decl_standalone)
             f.write(self.content_types.to_xml())
+
+        # Create docProps files
+        app_xml, core_xml, custom_xml = self.doc_props.to_xml()
+
+        with open('{}/docProps/app.xml'.format(tmp_folder), 'w') as f:
+            f.write(xml_decl_standalone)
+            f.write(app_xml)
+
+        with open('{}/docProps/core.xml'.format(tmp_folder), 'w') as f:
+            f.write(xml_decl_standalone)
+            f.write(core_xml)
+
+        with open('{}/docProps/custom.xml'.format(tmp_folder), 'w') as f:
+            f.write(xml_decl_standalone)
+            f.write(custom_xml)
+
+        shutil.copy('thumbnail.emf', '{}/docProps/'.format(tmp_folder))
 
         # Write pages.xml and pages.xml.rels
         pages_xml, pages_xml_rels = self.page_collection.to_xml()

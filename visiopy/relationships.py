@@ -47,12 +47,6 @@ class Relationship:
         for Id, (Target, Type) in self.rels.items():
             ET.SubElement(root, 'Relationship', {'Id': Id, 'Target': Target, 'Type': Type})
 
-        """
-        tree = ET.ElementTree(root)
-        tree.write(xml_file,
-                   encoding='UTF-8',
-                   xml_declaration=True)
-        """
         return ET.tostring(root, encoding='unicode')
 
     @staticmethod
