@@ -102,26 +102,15 @@ class Document:
             # TODO the masters folder seems to be generated when you
             # create a connection. Lets tackle this when i've got
             # the basics worked out.
-            #os.makedirs(tmp_folder + '/visio/masters')
-            #os.makedirs(tmp_folder + '/visio/masters/_rels')
+            # os.makedirs(tmp_folder + '/visio/masters')
+            # os.makedirs(tmp_folder + '/visio/masters/_rels')
             # TODO the theme folder lets you put themes on your diagram?
             # not present when theres no theme customisation
-            #os.makedirs(tmp_folder + '/visio/theme')
-
+            # os.makedirs(tmp_folder + '/visio/theme')
         else:
             raise IOError('Error writing to file {}. '
                           'tmp folder {} already exists'
                           .format(filename, tmp_folder))
-
-        # Add the neccesary files
-        # TODO:
-        #     write pages.xml/page1.xml/.. files
-        #     write docOps files app.xml, core.xml, custom.xml, thumbnail.emf
-        #     DONE: write _rels files
-        #     write visio document.xml and window.xml files
-        #     write [Content-Types].xml file
-        #     Convert all data from snake to CamelCase again
-        #     Do i have to set the RecalcDocument in custom.xml to True?
 
         xml_decl = '<?xml version="1.0" encoding="utf-8" ?>'
         xml_decl_standalone = '<?xml version="1.0" encoding="utf-8" standalone="yes" ?>'
@@ -232,9 +221,6 @@ def main():
 
     print('Writing to file {}'.format(new_filename))
     diag.to_file(new_filename)
-
-    print('PLEASE NOTE: WE STILL NEED TO GENERATE THE docProps files. To open the new file in visio unzip it, add the app.xml, core.xml, custom.xml and thumbnail.emf files to the docProps folder. Zip it again and rename to .vsdx')
-    print('Sounds like a pain, which it indeed is BUT, i F-ING MANAGED TO ADD A NEW PAGE USING F-ING PYTHON, YEAH!')
 
 
 if __name__ == '__main__':

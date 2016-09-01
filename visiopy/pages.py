@@ -211,41 +211,101 @@ class Page:
 class Shape:
     """Contains a single shape object"""
 
-    def __init__(self):
-        pass
+    def __init__(self, id, **kwargs):
 
-    @staticmethod
-    def from_xml(xml_shape):
-        """Initialise the shape into python object
+        self.id = id
+        self.type = kwargs.get('type', 'Shape')
+        self.line_style = kwargs.get('line_style', 3)
+        self.fill_style = kwargs.get('fill_style', 3)
+        self.text_style = kwargs.get('text_style', 3)
+        self.pin_x = kwargs.get('pin_x', 0.0)
+        self.pin_y = kwargs.get('pin_y', 0.0)
+        self.width = kwargs.get('width', 1.0)
+        self.height = kwargs.get('height', 1.0)
+        self.angle = kwargs.get('angle', 0)
+        self.flip_x = kwargs.get('flip_x', False)
+        self.flip_y = kwargs.get('flip_y', False)
+        self.resize_mode = kwargs.get('resize_mode', 0)
+        self.loc_pin_x = kwargs.get('loc_pin_x', self.width*0.5)   # F='Width*0.5
+        self.loc_pin_y = kwargs.get('loc_pin_y', self.height*0.5)  # F='Height*0.5
+
+        """
+            <Section N='Geometry' IX='0'>
+                <Cell N='NoFill' V='0'/>
+                <Cell N='NoLine' V='0'/>
+                <Cell N='NoShow' V='0'/>
+                <Cell N='NoSnap' V='0'/>
+                <Cell N='NoQuickDrag' V='0'/>
+                <Row T='RelMoveTo' IX='1'>
+                    <Cell N='X' V='0'/>
+                    <Cell N='Y' V='0'/>
+                </Row>
+                <Row T='RelLineTo' IX='2'>
+                    <Cell N='X' V='1'/>
+                    <Cell N='Y' V='0'/>
+                </Row>
+                <Row T='RelLineTo' IX='3'>
+                    <Cell N='X' V='1'/>
+                    <Cell N='Y' V='1'/>
+                </Row>
+                <Row T='RelLineTo' IX='4'>
+                    <Cell N='X' V='0'/>
+                    <Cell N='Y' V='1'/>
+                </Row>
+                <Row T='RelLineTo' IX='5'>
+                    <Cell N='X' V='0'/>
+                    <Cell N='Y' V='0'/>
+                </Row>
+        """
+
+    @classmethod
+    def from_xml(cls, xml_shape):
+        """Initialise the shape from xml into python object
 
         :param xml_shape: the shape from xml.etree.ElementTree
         """
 
-        # TODO: Ugly parsing at the moment
-        #       we should probably check for certain fields etc
+        # TODO Parse this shizzle
+        # you can have Cells, section and shapes
+        #tree = ET.parse(xml_shape)
+        root = xml_shape
 
-        # Parse the main shape attributes
+        id = root.attrib['ID']
+        type = root.attrib['Type']
+        line_style = root.attrib.get('LineStyle', None)
+        fill_style = root.attrib.get('FillStyle', None)
+        text_style = root.attrib.get('TextStyle', None)
 
-        cls = Shape()
-        for key, value in xml_shape.items():
-            setattr(cls, key, value)
-
-        # Parse all shape data
-        for item in xml_shape:
-            if 'Cell' in item.tag:
-                setattr(cls,
-                        item.attrib['N'],
-                        item.attrib['V'])
-            elif 'Section' in item.tag:
-                pass
-            elif 'Shapes' in item.tag:
-                pass
-
-        return cls
+        return cls(id,
+                   type=type,
+                   line_style=line_style,
+                   fill_style=fill_style,
+                   text_style=text_style)
 
     def to_xml(self):
-        # TODO stop faking it baby!
-        return "<Shape ID='1' Type='Shape' LineStyle='3' FillStyle='3' TextStyle='3' />"
+        root = ET.Element('Shape', {'ID': self.id,
+                                    'Type': self.type,
+                                    'LineStyle': str(self.line_style),
+                                    'FillStyle': str(self.fill_style),
+                                    'TextStyle': str(self.text_style)})
+        ET.SubElement(root, 'Cell', {'N': 'PinX', 'V': str(self.pin_x)})
+        ET.SubElement(root, 'Cell', {'N': 'PinY', 'V': str(self.pin_x)})
+        ET.SubElement(root, 'Cell', {'N': 'Width', 'V': str(self.width)})
+        ET.SubElement(root, 'Cell', {'N': 'Height', 'V': str(self.height)})
+        ET.SubElement(root, 'Cell', {'N': 'LocPinX', 'V': str(self.loc_pin_x), 'F': 'Width*0.5'})
+        ET.SubElement(root, 'Cell', {'N': 'LocPinY', 'V': str(self.loc_pin_y), 'F': 'Height*0.5'})
+        ET.SubElement(root, 'Cell', {'N': 'Angle', 'V': str(self.angle)})
+        if self.flip_x:
+            ET.SubElement(root, 'Cell', {'N': 'FlipX', 'V': '1'})
+        else:
+            ET.SubElement(root, 'Cell', {'N': 'FlipX', 'V': '0'})
+        if self.flip_y:
+            ET.SubElement(root, 'Cell', {'N': 'FlipY', 'V': '1'})
+        else:
+            ET.SubElement(root, 'Cell', {'N': 'FlipY', 'V': '0'})
+        ET.SubElement(root, 'Cell', {'N': 'ResizeMode', 'V': str(self.resize_mode)})
+
+        return ET.tostring(root, encoding='unicode')
 
 
 class Connect:

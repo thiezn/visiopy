@@ -905,7 +905,7 @@ class DocumentProperties:
                             <Cell N='DocLockDuplicatePage' V='0' U='BOOL'/>
                             <Cell N='PreviewQuality' V='0'/>
                             <Cell N='PreviewScope' V='0'/>
-                            <Cell N='DocLangID' V='en-GB'/>
+                            <Cell N='DocLangID' V='en-US'/>
                             <Section N='User'>
                                 <Row N='msvNoAutoConnect'>
                                     <Cell N='Value' V='1'/>
