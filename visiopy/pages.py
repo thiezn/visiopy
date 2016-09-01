@@ -218,10 +218,10 @@ class Shape:
         self.line_style = kwargs.get('line_style', 3)
         self.fill_style = kwargs.get('fill_style', 3)
         self.text_style = kwargs.get('text_style', 3)
-        self.pin_x = kwargs.get('pin_x', 0.0)
-        self.pin_y = kwargs.get('pin_y', 0.0)
-        self.width = kwargs.get('width', 1.0)
-        self.height = kwargs.get('height', 1.0)
+        self.pin_x = kwargs.get('pin_x', 5.0)
+        self.pin_y = kwargs.get('pin_y', 5.0)
+        self.width = kwargs.get('width', 5.0)
+        self.height = kwargs.get('height', 5.0)
         self.angle = kwargs.get('angle', 0)
         self.flip_x = kwargs.get('flip_x', False)
         self.flip_y = kwargs.get('flip_y', False)
@@ -304,6 +304,37 @@ class Shape:
         else:
             ET.SubElement(root, 'Cell', {'N': 'FlipY', 'V': '0'})
         ET.SubElement(root, 'Cell', {'N': 'ResizeMode', 'V': str(self.resize_mode)})
+
+        # TODO: I think the geometry data depicts what kind of shape it is
+        # I will default this now to a rectangle
+
+
+        geometry = ET.SubElement(root, 'Section', {'N': 'Geometry', 'IX': '0'})
+        ET.SubElement(geometry, 'Cell', {'N': 'NoFill', 'V': '0'})
+        ET.SubElement(geometry, 'Cell', {'N': 'NoLine', 'V': '0'})
+        ET.SubElement(geometry, 'Cell', {'N': 'NoShow', 'V': '0'})
+        ET.SubElement(geometry, 'Cell', {'N': 'NoSnap', 'V': '0'})
+        ET.SubElement(geometry, 'Cell', {'N': 'NoQuickDrag', 'V': '0'})
+
+        rel_move_to = ET.SubElement(geometry, 'Row', {'T': 'RelMoveTo', 'IX': '1'})
+        ET.SubElement(rel_move_to, 'Cell', {'N': 'X', 'V': '0'})
+        ET.SubElement(rel_move_to, 'Cell', {'N': 'Y', 'V': '0'})
+
+        rel_line_to1 = ET.SubElement(geometry, 'Row', {'T': 'RelMoveTo', 'IX': '2'})
+        ET.SubElement(rel_line_to1, 'Cell', {'N': 'X', 'V': '1'})
+        ET.SubElement(rel_line_to1, 'Cell', {'N': 'Y', 'V': '0'})
+
+        rel_line_to2 = ET.SubElement(geometry, 'Row', {'T': 'RelMoveTo', 'IX': '3'})
+        ET.SubElement(rel_line_to2, 'Cell', {'N': 'X', 'V': '1'})
+        ET.SubElement(rel_line_to2, 'Cell', {'N': 'Y', 'V': '1'})
+
+        rel_line_to3 = ET.SubElement(geometry, 'Row', {'T': 'RelMoveTo', 'IX': '4'})
+        ET.SubElement(rel_line_to3, 'Cell', {'N': 'X', 'V': '0'})
+        ET.SubElement(rel_line_to3, 'Cell', {'N': 'Y', 'V': '1'})
+
+        rel_line_to4 = ET.SubElement(geometry, 'Row', {'T': 'RelMoveTo', 'IX': '5'})
+        ET.SubElement(rel_line_to4, 'Cell', {'N': 'X', 'V': '0'})
+        ET.SubElement(rel_line_to4, 'Cell', {'N': 'Y', 'V': '0'})
 
         return ET.tostring(root, encoding='unicode')
 
