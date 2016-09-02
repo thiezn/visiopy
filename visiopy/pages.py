@@ -28,7 +28,11 @@ class PageCollection:
         self.pages = pages
 
     def add_page(self, name):
-        """Add a page to the collection"""
+        """Add a page to the collection
+        
+        :param name: The name of the page
+        :return: rel_id e.g: 'rId1'
+        """
 
         filename = 0
         rel_id = 0
@@ -53,9 +57,19 @@ class PageCollection:
         self.rels.add(rel_id, filename, 'http://schemas.microsoft.com/visio/2010/relationships/page')
         self.content_types.add('/visio/pages/{}'.format(filename), 'application/vnd.ms-visio.page+xml')
         self.pages.append(Page(filename,
-                               name,
                                id,
-                               rel_id))
+                               rel_id,
+                               name=name))
+        return rel_id
+
+    def add_shape(self, page_rel_id, **kwargs):
+        """Add a shape to the given page rel_id"""
+        for page in self.pages:
+            if page.rel_id == page_rel_id:
+                page.add_shape(**kwargs)
+                return None
+
+        raise KeyError('Page {} not found'.format(page_rel_id))
 
     @classmethod
     def from_xml(cls, dir, content_types):
@@ -143,18 +157,28 @@ class Page:
 
     ns = {'visio': 'http://schemas.microsoft.com/office/visio/2012/main'}
 
-    def __init__(self, filename, name=None, id=None, rel_id=None, shapes=None, connects=None):
+    def __init__(self, filename, id, rel_id, **kwargs):
         """Initialises a page
 
         :param shapes: List of :class:`Shape` classes
         :param connects: List of :class:`Connect` classes
         """
         self.filename = filename
-        self.name = name
         self.id = id
         self.rel_id = rel_id
-        self.shapes = shapes
-        self.connects = connects
+        self.name = kwargs.get('name', '')
+        self.shapes = kwargs.get('shapes', [])
+        self.connects = kwargs.get('connects', [])
+
+    def add_shape(self, **kwargs):
+        """Add a shape to the Page"""
+        new_id = 1
+
+        for shape in self.shapes:
+            if shape.id >= new_id:
+                new_id += 1
+
+        self.shapes.append(Shape(new_id, **kwargs))
 
     def to_xml(self):
         """Writes Page object to page?.xml file"""
@@ -205,7 +229,7 @@ class Page:
             for item in items:
                 connects.append(Connect.from_xml(item))
 
-        return cls(filename, name, id, rel_id, shapes, connects)
+        return cls(filename, id, rel_id, name=name, shapes=shapes, connects=connects)
 
 
 class Shape:
@@ -226,37 +250,8 @@ class Shape:
         self.flip_x = kwargs.get('flip_x', False)
         self.flip_y = kwargs.get('flip_y', False)
         self.resize_mode = kwargs.get('resize_mode', 0)
-        self.loc_pin_x = kwargs.get('loc_pin_x', self.width*0.5)   # F='Width*0.5
-        self.loc_pin_y = kwargs.get('loc_pin_y', self.height*0.5)  # F='Height*0.5
-
-        """
-            <Section N='Geometry' IX='0'>
-                <Cell N='NoFill' V='0'/>
-                <Cell N='NoLine' V='0'/>
-                <Cell N='NoShow' V='0'/>
-                <Cell N='NoSnap' V='0'/>
-                <Cell N='NoQuickDrag' V='0'/>
-                <Row T='RelMoveTo' IX='1'>
-                    <Cell N='X' V='0'/>
-                    <Cell N='Y' V='0'/>
-                </Row>
-                <Row T='RelLineTo' IX='2'>
-                    <Cell N='X' V='1'/>
-                    <Cell N='Y' V='0'/>
-                </Row>
-                <Row T='RelLineTo' IX='3'>
-                    <Cell N='X' V='1'/>
-                    <Cell N='Y' V='1'/>
-                </Row>
-                <Row T='RelLineTo' IX='4'>
-                    <Cell N='X' V='0'/>
-                    <Cell N='Y' V='1'/>
-                </Row>
-                <Row T='RelLineTo' IX='5'>
-                    <Cell N='X' V='0'/>
-                    <Cell N='Y' V='0'/>
-                </Row>
-        """
+        self.loc_pin_x = kwargs.get('loc_pin_x', self.width*0.5)
+        self.loc_pin_y = kwargs.get('loc_pin_y', self.height*0.5)
 
     @classmethod
     def from_xml(cls, xml_shape):
@@ -283,7 +278,7 @@ class Shape:
                    text_style=text_style)
 
     def to_xml(self):
-        root = ET.Element('Shape', {'ID': self.id,
+        root = ET.Element('Shape', {'ID': str(self.id),
                                     'Type': self.type,
                                     'LineStyle': str(self.line_style),
                                     'FillStyle': str(self.fill_style),

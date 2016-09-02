@@ -207,7 +207,10 @@ class Document:
 
     def add_page(self, name):
         """Add a page to the document"""
-        self.page_collection.add_page(name)
+        return self.page_collection.add_page(name)
+
+    def add_shape(self, page_rel_id, **kwargs):
+        return self.page_collection.add_shape(page_rel_id, **kwargs)
 
 
 def main():
@@ -217,7 +220,10 @@ def main():
     diag = Document.from_file(filename)
 
     print('Adding empty page')
-    diag.add_page('MyNewPage')
+    page_rel_id = diag.add_page('MyNewPage')
+
+    print('Adding a shape to the new page')
+    diag.add_shape(page_rel_id, pin_x=1.0, pin_y=1.0, width=3.0, height=2.0)
 
     print('Writing to file {}'.format(new_filename))
     diag.to_file(new_filename)
