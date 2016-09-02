@@ -66,8 +66,7 @@ class PageCollection:
         """Add a shape to the given page rel_id"""
         for page in self.pages:
             if page.rel_id == page_rel_id:
-                page.add_shape(**kwargs)
-                return None
+                return page.add_shape(**kwargs)
 
         raise KeyError('Page {} not found'.format(page_rel_id))
 
@@ -171,7 +170,10 @@ class Page:
         self.connects = kwargs.get('connects', [])
 
     def add_shape(self, **kwargs):
-        """Add a shape to the Page"""
+        """Add a shape to the Page
+        
+        :return: id of the shape (is localised to the current page)
+        """
         new_id = 1
 
         for shape in self.shapes:
@@ -179,6 +181,22 @@ class Page:
                 new_id += 1
 
         self.shapes.append(Shape(new_id, **kwargs))
+        return new_id
+
+    def add_connect(self, shape1, shape2):
+        """Add connect between two shapes
+
+        :param shape1: the ID of the first shape
+        :param shape2: the ID of the second shape
+        """
+        new_id = 1
+
+        for connect in self.connects:
+            if connect.id >= new_id:
+                new_id += 1
+
+        self.connects.append(Connect(new_id, **kwargs))
+        return new_id
 
     def to_xml(self):
         """Writes Page object to page?.xml file"""
@@ -338,6 +356,40 @@ class Connect:
     """Contains a single connect object"""
 
     def __init__(self):
+        pass
+
+    def to_xml(self):
+        """
+        For a single connection you get two Connect items
+
+        A single item parameters look like this:
+
+        FromSheet = The shape ID of the connector
+        FromCell = The Cell to connect (e.g. EndX)
+        FromPart = ?
+        ToSheet = The Shape ID of the first shape
+        ToCell = The Cell to connect to (e.g PinX)
+        ToPart =
+
+        The FromPart CONSTANT DEFINITIONS gotten from https://msdn.microsoft.com/en-us/library/office/ff766057.aspx
+
+        ConnectFromError -1
+        FromNone 0
+        LeftEdge 1
+        CenterEdge 2
+        RightEdge 3
+        BottomEdge 4
+        MiddleEdge 5
+        TopEdge 6
+        BeginX 7
+        BeginY 8
+        Begin 9
+        EndX 10
+        EndY 11
+        End 12
+        FromAngle 13
+        FromPin 14
+        """
         pass
 
     @staticmethod

@@ -221,6 +221,9 @@ class Document:
     def add_shape(self, page_rel_id, **kwargs):
         return self.page_collection.add_shape(page_rel_id, **kwargs)
 
+    def add_connect(self, page_rel_id, shape1, shape2):
+        return self.page_collection.add_shape(page_rel_id, shape1, shape2)
+
 
 def main():
     filename = 'SimpleDrawingMultiplePages.vsdx'
@@ -247,8 +250,11 @@ def main():
     page_rel_id = diag.add_page('HelloWorld')
 
     print('Adding two square shapes to the new page')
-    diag.add_shape(page_rel_id, pin_x=2.0, pin_y=5.0, width=2.0, height=2.0)
-    diag.add_shape(page_rel_id, pin_x=6.0, pin_y=5.0, width=2.0, height=2.0)
+    rect1 = diag.add_shape(page_rel_id, pin_x=2.0, pin_y=5.0, width=2.0, height=2.0)
+    rect2 = diag.add_shape(page_rel_id, pin_x=6.0, pin_y=5.0, width=2.0, height=2.0)
+
+    print('Creating connect between shapes')
+    #diag.add_connect(page_rel_id, rect1, rect2)
 
     print('Writing to file {}'.format(new_file))
     diag.to_file(new_file)

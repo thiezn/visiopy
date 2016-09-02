@@ -24,3 +24,6 @@ Here's how I would LIKE to be able to generate diagrams
 
 A nice short description of the format found here:
 http://www.digitalpreservation.gov/formats/fdd/fdd000021.shtml
+
+The Visio VBA Reference provides good insight in the workings of the various objects:
+https://msdn.microsoft.com/en-us/library/office/ff765377.aspx
