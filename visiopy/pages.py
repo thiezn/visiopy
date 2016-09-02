@@ -16,7 +16,7 @@ class PageCollection:
     """Holds a collection of :class:`Page` classes including their properties
     and relationships"""
 
-    def __init__(self, content_types, rels=None, pages=None):
+    def __init__(self, content_types, **kwargs):
         """Initialise pages
 
         :param content_types: Instance of :class:`ContentType`
@@ -24,8 +24,8 @@ class PageCollection:
         :param pages: List of :class:`Page` classes
         """
         self.content_types = content_types
-        self.rels = rels
-        self.pages = pages
+        self.rels = kwargs.get('rels', Relationship())
+        self.pages = kwargs.get('pages', [])
 
     def add_page(self, name):
         """Add a page to the collection
@@ -97,7 +97,7 @@ class PageCollection:
             pages.append(Page.from_xml(page_dir + rels.rels[rel_id][0],
                                        name, id, rel_id))
 
-        return cls(content_types, rels, pages)
+        return cls(content_types, rels=rels, pages=pages)
 
     def to_xml(self):
         """Generate XML data for pages

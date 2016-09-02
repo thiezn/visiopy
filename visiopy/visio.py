@@ -47,13 +47,35 @@ class Document:
     |- [Content_Types].xml
     """
 
-    def __init__(self,
-                 page_collection=None,
-                 package_rels=None,
-                 document_rels=None,
-                 content_types=None):
+    def __init__(self, **kwargs):
 
-        self.page_collection = page_collection
+        # Content_Types
+        self.content_types = kwargs.get('content_types', ContentTypes())
+
+        # Page collection
+        self.page_collection = kwargs.get('page_collection', PageCollection(self.content_types))
+
+        # Relationships
+        # TODO doesn't deserver the schoonheidsprijs here...
+        self.package_rels = kwargs.get('package_rels', None)
+        if not self.package_rels:
+            self.package_rels = Relationship()
+            self.package_rels.add("rId3", "docProps/core.xml", "http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties")
+            self.package_rels.add("rId2", "docProps/thumbnail.emf", "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail")
+            self.package_rels.add("rId1", "visio/document.xml", "http://schemas.microsoft.com/visio/2010/relationships/document")
+            self.package_rels.add("rId5", "docProps/custom.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/custom-properties")
+            self.package_rels.add("rId4", "docProps/app.xml", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties")
+
+        self.document_rels = kwargs.get('document_rels', None)
+        if not self.document_rels:
+            self.document_rels = Relationship()
+            self.document_rels.add("rId2", "windows.xml", "http://schemas.microsoft.com/visio/2010/relationships/windows")
+            self.document_rels.add("rId1", "pages/pages.xml", "http://schemas.microsoft.com/visio/2010/relationships/pages")
+
+        # Document properties
+        self.doc_props = DocProps()
+        self.windows_properties = WindowsProperties()
+        self.document_properties = DocumentProperties()
 
         # apps.xml data
         self.company = ''
@@ -66,18 +88,6 @@ class Document:
         self.title = ''
         self.subject = ''
         self.description = ''
-
-        # Relationships
-        self.package_rels = package_rels
-        self.document_rels = document_rels
-
-        # Document properties
-        self.doc_props = DocProps()
-        self.windows_properties = WindowsProperties()
-        self.document_properties = DocumentProperties()
-
-        # Content_Types
-        self.content_types = content_types
 
         # custom.xml data
         self.is_metric = True  # Using the metric system
@@ -178,8 +188,7 @@ class Document:
         shutil.move(filename + '.zip', filename + '.vsdx')
 
         # Remove the temporary folder
-        print('normally we remove the tmp folder but leave it for debuggin now')
-        # shutil.rmtree(tmp_folder)
+        shutil.rmtree(tmp_folder)
 
     @classmethod
     def from_file(cls, filename):
@@ -215,7 +224,9 @@ class Document:
 
 def main():
     filename = 'SimpleDrawingMultiplePages.vsdx'
-    new_filename = 'mytmpfile'
+    edited_file = 'editedvisio'
+    new_file = 'newvisio'
+
     print('Loading diagram {}'.format(filename))
     diag = Document.from_file(filename)
 
@@ -226,9 +237,21 @@ def main():
     diag.add_shape(page_rel_id, pin_x=2.0, pin_y=5.0, width=2.0, height=2.0)
     diag.add_shape(page_rel_id, pin_x=6.0, pin_y=5.0, width=2.0, height=2.0)
 
-    print('Writing to file {}'.format(new_filename))
-    diag.to_file(new_filename)
+    print('Writing to file {}'.format(edited_file))
+    diag.to_file(edited_file)
 
+    print('Creating new file {}'.format(new_file))
+    diag = Document()
+
+    print('Adding empty page')
+    page_rel_id = diag.add_page('HelloWorld')
+
+    print('Adding two square shapes to the new page')
+    diag.add_shape(page_rel_id, pin_x=2.0, pin_y=5.0, width=2.0, height=2.0)
+    diag.add_shape(page_rel_id, pin_x=6.0, pin_y=5.0, width=2.0, height=2.0)
+
+    print('Writing to file {}'.format(new_file))
+    diag.to_file(new_file)
 
 if __name__ == '__main__':
     main()

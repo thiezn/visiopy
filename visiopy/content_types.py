@@ -15,10 +15,26 @@ class ContentTypes:
     """Holds a collection of :class:`Page` classes including their properties
     and relationships"""
 
-    def __init__(self, defaults=None, overrides=None):
-        """Initialise ContentTypes"""
-        self.defaults = defaults
-        self.overrides = overrides
+    def __init__(self, **kwargs):
+        """Initialise ContentTypes
+
+        :param defaults: Default content types
+        :param overrides: Override content types
+        """
+        self.defaults = kwargs.get('defaults', {})
+        self.overrides = kwargs.get('overrides', {})
+
+        # Add the default visio file content types
+        # TODO: Have to decide if we want to be allowed to overwrite these by keyword args?
+        self.add_default('emf', 'image/x-emf')
+        self.add_default('rels', 'application/vnd.openxmlformats-package.relationships+xml')
+        self.add_default('xml', 'application/xml')
+        self.add('/visio/document.xml', 'application/vnd.ms-visio.drawing.main+xml')
+        self.add('/docProps/core.xml', 'application/vnd.openxmlformats-package.core-properties+xml')
+        self.add('/docProps/app.xml', 'application/vnd.openxmlformats-officedocument.extended-properties+xml')
+        self.add('/docProps/custom.xml', 'application/vnd.openxmlformats-officedocument.custom-properties+xml')
+        self.add('/visio/pages/pages.xml', 'application/vnd.ms-visio.pages+xml')
+        self.add('/visio/windows.xml', 'application/vnd.ms-visio.windows+xml')
 
     def add(self, part_name, content_type):
         """Add a item to the Types
@@ -77,4 +93,4 @@ class ContentTypes:
             if item.tag == '{http://schemas.openxmlformats.org/package/2006/content-types}Override':
                 overrides[item.attrib['PartName']] = item.attrib['ContentType']
 
-        return cls(defaults, overrides)
+        return cls(defaults=defaults, overrides=overrides)
