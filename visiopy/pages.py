@@ -284,7 +284,7 @@ class Shape:
                                     'FillStyle': str(self.fill_style),
                                     'TextStyle': str(self.text_style)})
         ET.SubElement(root, 'Cell', {'N': 'PinX', 'V': str(self.pin_x)})
-        ET.SubElement(root, 'Cell', {'N': 'PinY', 'V': str(self.pin_x)})
+        ET.SubElement(root, 'Cell', {'N': 'PinY', 'V': str(self.pin_y)})
         ET.SubElement(root, 'Cell', {'N': 'Width', 'V': str(self.width)})
         ET.SubElement(root, 'Cell', {'N': 'Height', 'V': str(self.height)})
         ET.SubElement(root, 'Cell', {'N': 'LocPinX', 'V': str(self.loc_pin_x), 'F': 'Width*0.5'})

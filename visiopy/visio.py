@@ -222,8 +222,9 @@ def main():
     print('Adding empty page')
     page_rel_id = diag.add_page('MyNewPage')
 
-    print('Adding a shape to the new page')
-    diag.add_shape(page_rel_id, pin_x=1.0, pin_y=1.0, width=3.0, height=2.0)
+    print('Adding two square shapes to the new page')
+    diag.add_shape(page_rel_id, pin_x=2.0, pin_y=5.0, width=2.0, height=2.0)
+    diag.add_shape(page_rel_id, pin_x=6.0, pin_y=5.0, width=2.0, height=2.0)
 
     print('Writing to file {}'.format(new_filename))
     diag.to_file(new_filename)
